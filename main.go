@@ -13,8 +13,7 @@ import (
 
 func main() {
 	if len(os.Args) < 2 {
-		fmt.Printf("Usage: %s [hh:]mm\n", filepath.Base(os.Args[0]))
-		os.Exit(1)
+		printUsage()
 	}
 
 	timeUntilSleepAsString := os.Args[1]
@@ -24,19 +23,25 @@ func main() {
 
 	if timePartsLen > 2 || !checkFormat(timeUntilSleepAsString) {
 		err := fmt.Errorf("expected format hh:mm, got %s", timeUntilSleepAsString)
-		fmt.Println(err)
-		os.Exit(1)
+		printErr(err)
 	}
 
 	// By default just minutes are assumed
-	minutes, _ := strconv.Atoi(timeParts[0])
+	minutes, err := strconv.Atoi(timeParts[0])
+	if err != nil {
+		printErr(err)
+	}
 
 	if timePartsLen == 2 {
 		// If the string contains hours and minutes,
 		// convert the hours to minutes
 		minutes = minutes * 60
 		// Add the minutes part
-		convertedMinutes, _ := strconv.Atoi(timeParts[1])
+		convertedMinutes, err := strconv.Atoi(timeParts[1])
+		if err != nil {
+			printErr(err)
+		}
+
 		minutes += convertedMinutes
 	}
 
@@ -44,17 +49,19 @@ func main() {
 	if minutes == 1 {
 		minuteMsg = "minute"
 	}
+
 	fmt.Printf("Going to sleep in %d %s\n", minutes, minuteMsg)
 	time.Sleep(time.Duration(minutes) * time.Minute)
-	err := goToSleepDarwin()
+	err = goToSleepDarwin()
 	if err != nil {
-		fmt.Print(err)
-		os.Exit(1)
+		printErr(err)
 	}
 }
 
 func goToSleepDarwin() error {
+	// Kinda sucks because the App has to be allowed to send messages to System Events
 	// sleepCmd := exec.Command("osascript", "-e", `tell app "System Events" to sleep`)
+	// Therefore pmset is used
 	sleepCmd := exec.Command("pmset", "sleepnow")
 
 	err := sleepCmd.Start()
@@ -75,4 +82,16 @@ func checkFormat(input string) bool {
 	// Use find instead of match, because match detects substrings as well
 	matchedInput := formatRegex.FindString(input)
 	return input == matchedInput
+}
+
+func printUsage() {
+	printErr(nil)
+}
+
+func printErr(err error) {
+	fmt.Printf("Usage: %s [hh:]mm\n", filepath.Base(os.Args[0]))
+	if err != nil {
+		fmt.Fprintln(os.Stderr, err)
+	}
+	os.Exit(1)
 }
