@@ -3,12 +3,13 @@ package main
 import (
 	"fmt"
 	"os"
-	"os/exec"
 	"path/filepath"
 	"regexp"
 	"strconv"
 	"strings"
 	"time"
+
+	"bode.fun/sleepy/sleep"
 )
 
 func main() {
@@ -52,29 +53,10 @@ func main() {
 
 	fmt.Printf("Going to sleep in %d %s\n", minutes, minuteMsg)
 	time.Sleep(time.Duration(minutes) * time.Minute)
-	err = goToSleepDarwin()
+	err = sleep.Sleep()
 	if err != nil {
 		printErr(err)
 	}
-}
-
-func goToSleepDarwin() error {
-	// Kinda sucks because the App has to be allowed to send messages to System Events
-	// sleepCmd := exec.Command("osascript", "-e", `tell app "System Events" to sleep`)
-	// Therefore pmset is used
-	sleepCmd := exec.Command("pmset", "sleepnow")
-
-	err := sleepCmd.Start()
-	if err != nil {
-		return err
-	}
-
-	err = sleepCmd.Wait()
-	if err != nil {
-		return err
-	}
-
-	return nil
 }
 
 func checkFormat(input string) bool {
